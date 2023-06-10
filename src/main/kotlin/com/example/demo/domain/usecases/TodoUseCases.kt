@@ -1,50 +1,46 @@
 package com.example.demo.domain.usecases
 
+import com.example.demo.domain.datasources.TodoDataSource
 import com.example.demo.domain.models.TodoModel
 import com.example.demo.domain.repositories.TodoRepository
 import java.util.UUID
 
-class TodoUseCases(private val repository: TodoRepository) {
+class TodoUseCases(private val dataSource: TodoDataSource) : TodoRepository {
 
-    fun getAll(): Result<List<TodoModel>> {
-       return repository.getAll()
+    override fun getAll(): Result<List<TodoModel>> {
+        return Result.success(dataSource.getAll())
     }
 
-    fun getById(id: UUID): Result<TodoModel> {
-        return validateId(id)
+    override fun getById(id: UUID): Result<TodoModel> {
+        return when (val todo = dataSource.getById(id)) {
+            null -> Result.failure(Exception("Todo not found by ID"))
+            else -> Result.success(todo)
+        }
     }
 
-    fun create(todo: TodoModel): Result<TodoModel> {
+    override fun create(todo: TodoModel): Result<TodoModel> {
         val errors = validateTodo(todo)
-        
-        return errors?.let {
-            Result.failure(Exception(errors.joinToString(separator = "; ")))
-        } ?: repository.create(todo)
-    }
-
-    fun update(id: UUID, updatedTodo: TodoModel): Result<TodoModel> {
-        val validation = validateId(id)
-        if (validation.isFailure) {
-            return validation
+        return when {
+            errors.isNotEmpty() -> Result.failure(Exception(errors.joinToString(separator = "; ")))
+            else -> Result.success(dataSource.create(todo))
         }
-
-        return repository.update(id, updatedTodo)
     }
 
-    fun delete(id: UUID): Result<Boolean> {
-        val validation = validateId(id)
-        if (validation.isFailure) {
-            return validation.map { false }
+    override fun update(id: UUID, updatedTodo: TodoModel): Result<TodoModel> {
+        return when (dataSource.getById(id)) {
+            null -> Result.failure(Exception("Todo not found by ID"))
+            else -> Result.success(dataSource.update(id, updatedTodo)!!)
         }
-
-        return repository.delete(id)
     }
 
-    private fun validateId(id: UUID): Result<TodoModel> {
-        return repository.getById(id).takeIf { it.isSuccess } ?: Result.failure(Exception("Todo not found by ID"))
+    override fun delete(id: UUID): Result<Boolean> {
+        return when (dataSource.getById(id)) {
+            null -> Result.failure(Exception("Todo not found by ID"))
+            else -> Result.success(dataSource.delete(id))
+        }
     }
-    
-    private fun validateTodo(todo: TodoModel): List<String>? {
+
+    private fun validateTodo(todo: TodoModel): List<String> {
         val errors = mutableListOf<String>()
 
         if (todo.title.isBlank()) {
@@ -55,6 +51,6 @@ class TodoUseCases(private val repository: TodoRepository) {
             errors.add("Todo description cannot be empty")
         }
 
-        return errors.takeIf { it.isNotEmpty() }
+        return errors
     }
 }

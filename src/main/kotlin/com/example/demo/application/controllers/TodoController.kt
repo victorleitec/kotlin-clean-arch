@@ -2,6 +2,7 @@ package com.example.demo.application.controllers
 
 import com.example.demo.domain.models.TodoModel
 import com.example.demo.domain.usecases.TodoUseCases
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -9,7 +10,10 @@ import java.util.UUID
 
 @RestController
 @RequestMapping("/api/todos")
-class TodoController(private val useCases: TodoUseCases) {
+class TodoController {
+
+    @Autowired
+    private lateinit var useCases: TodoUseCases
 
     @GetMapping
     fun getAll(): ResponseEntity<List<TodoModel>> {

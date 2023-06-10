@@ -1,27 +1,24 @@
 package com.example.demo.infrastructure.persistence.entities
 
 import com.example.demo.domain.models.TodoModel
-import jakarta.persistence.Column
-import jakarta.persistence.Entity
-import jakarta.persistence.Id
-import jakarta.persistence.Table
+import jakarta.persistence.*
 import java.util.UUID
 
 @Entity
-@Table(name = "todos")
+@Table(name = "tb_todos")
 class TodoEntity(
         @Id
         @Column(name = "id", nullable = false)
         val id: UUID,
 
         @Column(name = "title", nullable = false)
-        val title: String,
+        var title: String,
 
         @Column(name = "description", nullable = false)
-        val description: String,
+        var description: String,
 
         @Column(name = "done", nullable = false)
-        val done: Boolean = false
+        var done: Boolean = false
 ) {
     constructor() : this(UUID.randomUUID(), "", "", false)
 
@@ -31,7 +28,8 @@ class TodoEntity(
     
     companion object {
         fun fromModel(model: TodoModel): TodoEntity {
-            return TodoEntity(model.id, model.title, model.description, model.done)
+            val id = model.id ?: UUID.randomUUID()
+            return TodoEntity(id, model.title, model.description, model.done)
         }
     }
 }
